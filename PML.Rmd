@@ -1,0 +1,87 @@
+# Data preparation
+As there are a large numbe of columns with N/A data and as there are not used in the testing.csv file, I have taken the option to simply remove these columns.
+To do that I simply imported the CSV file into Excel and manually deleted the columns. I then save the new file
+in a new CSV file (called Mytraining1.csv)
+
+# R prerapation
+ 
+ I have chosen to use the Random Forest from the caret package for the exercise.
+ So in the R code:
+ * I load the caret package
+ * I then load my data with the read.csv R function
+ * I then split my data into a training and a testing set (70/30 split)
+ 
+```
+library(caret)
+
+mydata <- read.csv(file="Mytraining1.csv",head=TRUE,sep=";")
+
+inTrain <- createDataPartition(y=mydata$classe,p=0.7, list=FALSE)
+training <- mydata[inTrain,]
+testing <- mydata[-inTrain,]
+```
+
+# Training phase
+I use the Random Forest method for the training phase. The R code is:
+```
+modFit <- train(classe~ .,data=training,method="rf",trControl=trainControl(method="cv",number=5),prox=TRUE,allowParallel=TRUE)
+modFit
+```
+
+The training gives good results:
+```
+> modFit
+Random Forest 
+
+13453 samples
+   52 predictor
+    5 classes: 'A', 'B', 'C', 'D', 'E' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold) 
+
+Summary of sample sizes: 10762, 10762, 10762, 10763, 10763 
+
+Resampling results across tuning parameters:
+
+  mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
+   2    0.9906343  0.9881511  0.004768654  0.006033659
+  27    0.9895938  0.9868342  0.003668510  0.004641940
+  52    0.9815659  0.9766810  0.003079643  0.003899140
+
+Accuracy was used to select the optimal model using  the largest value.
+The final value used for the model was mtry = 2. 
+```
+# Validation with testing set
+I validate the accuracy of the model using the testing set. The R code to do that is:
+```
+pred <- predict(modFit, testing)
+testing$predRight <- pred==testing$classe
+table (pred, testing$classe)
+```
+The model gives good result (only 46 misclassification) on the testing set as shown below:
+```    
+pred    A    B    C    D    E
+   A 1638    6    0    0    0
+   B    3 1105   10    0    0
+   C    0    4  994   20    0
+   D    0    0    1  924    2
+   E    0    0    0    0 1056
+```
+
+# Prediting classication for the exercise
+I choose to keep the model validated below and apply it to the data to be predicted. Te R code is:
+```
+mydata1 <- read.csv(file="pml-testing.csv",head=TRUE,sep=",")
+pred1 <- predict(modFit, mydata1)
+pred1
+```
+
+The resulting classication is:
+```
+pred1
+ [1] B A B A A E D B A A B C B A E E A B B B
+Levels: A B C D E
+```
+
+This result have been submitted on Coursera site and all successfully validated
