@@ -8,15 +8,26 @@ in a new CSV file (called Mytraining1.csv)
  I have chosen to use the Random Forest from the caret package for the exercise.
  So in the R code:
  * I load the caret package
- * I then load my data with the read.csv R function
+ 
+  
+```
+library(caret)
+```
+ 
+# Data  prerapation
+ 
+* I then load my data with the read.csv R function. As there are a large numbe of columns with N/A data, I use na.strings option to identify the missing data
+ * I remove the first six columns that does  contains "admin" data not useful for  training 
+ * I then remove the NA data
  * I then split my data into a training and a testing set (70/30 split)
  
 ```
-library(caret)
+mydata <- read.csv(file="pml-training.csv",head=TRUE,sep=",",na.strings=c("NA",""))
+mydata<-mydata[,7:160]
+mostly_data<-apply(!is.na(mydata),2,sum)>19621
+mydata<-mydata[,mostly_data]
 
-mydata <- read.csv(file="Mytraining1.csv",head=TRUE,sep=";")
-
-inTrain <- createDataPartition(y=mydata$classe,p=0.7, list=FALSE)
+inTrain <- createDataPartition(y=mydata$classe,p=0.7, list=FALSE) 
 training <- mydata[inTrain,]
 testing <- mydata[-inTrain,]
 ```
@@ -28,29 +39,28 @@ modFit <- train(classe~ .,data=training,method="rf",trControl=trainControl(metho
 modFit
 ```
 
-The training gives good results:
+The training gives good results with an accuracy of 99.67%:
 ```
-> modFit
 Random Forest 
 
-13453 samples
-   52 predictor
+13737 samples
+   53 predictor
     5 classes: 'A', 'B', 'C', 'D', 'E' 
 
 No pre-processing
 Resampling: Cross-Validated (5 fold) 
 
-Summary of sample sizes: 10762, 10762, 10762, 10763, 10763 
+Summary of sample sizes: 10991, 10990, 10988, 10989, 10990 
 
 Resampling results across tuning parameters:
 
-  mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
-   2    0.9906343  0.9881511  0.004768654  0.006033659
-  27    0.9895938  0.9868342  0.003668510  0.004641940
-  52    0.9815659  0.9766810  0.003079643  0.003899140
+  mtry  Accuracy   Kappa      Accuracy SD   Kappa SD   
+   2    0.9931569  0.9913430  0.0010750283  0.001360236
+  27    0.9967242  0.9958564  0.0007721394  0.000976617
+  53    0.9910456  0.9886725  0.0031075881  0.003931862
 
 Accuracy was used to select the optimal model using  the largest value.
-The final value used for the model was mtry = 2. 
+The final value used for the model was mtry = 27. 
 ```
 # Validation with testing set
 I validate the accuracy of the model using the testing set. The R code to do that is:
@@ -59,18 +69,18 @@ pred <- predict(modFit, testing)
 testing$predRight <- pred==testing$classe
 table (pred, testing$classe)
 ```
-The model gives good result (only 46 misclassification) on the testing set as shown below:
-```    
+The model gives good result with an accuracy of 99.6% ( 21 misclassification over 5885) on the testing set as shown below:
+```   
 pred    A    B    C    D    E
-   A 1638    6    0    0    0
-   B    3 1105   10    0    0
-   C    0    4  994   20    0
-   D    0    0    1  924    2
-   E    0    0    0    0 1056
+   A 1674    4    0    0    0
+   B    0 1130    1    0    0
+   C    0    4 1025    3    0
+   D    0    1    0  958    5
+   E    0    0    0    3 1077
 ```
 
 # Prediting classication for the exercise
-I choose to keep the model validated below and apply it to the data to be predicted. Te R code is:
+I choose to keep the model validated below and apply it to the data to be predicted. The R code is:
 ```
 mydata1 <- read.csv(file="pml-testing.csv",head=TRUE,sep=",")
 pred1 <- predict(modFit, mydata1)
